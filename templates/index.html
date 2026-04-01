@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SentimentIQ — CSC 309 Mini Project</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: rgba(255,255,255,0.07);
+      --accent-pos: #00e5a0;
+      --accent-neg: #ff4d6d;
+      --accent-neutral: #7c6af7;
+      --text: #e8e8f0;
+      --muted: #5a5a72;
+      --card: #15151e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(0,229,160,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(124,106,247,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 60% 40%, rgba(255,77,109,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      padding: 52px 0 40px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,106,247,0.12);
+      border: 1px solid rgba(124,106,247,0.25);
+      color: #a89ef5;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    .badge span { width: 6px; height: 6px; background: #7c6af7; border-radius: 50%; animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent-pos) 0%, #00b8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 300;
+      max-width: 420px;
+      margin: 0 auto 12px;
+      line-height: 1.6;
+    }
+
+    .model-stats {
+      display: inline-flex;
+      gap: 20px;
+      margin-top: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-nb { background: var(--accent-pos); }
+    .dot-lr { background: var(--accent-neutral); }
+
+    .stat strong { color: var(--text); font-weight: 500; }
+
+    /* Input Section */
+    .input-section {
+      margin: 32px 0;
+    }
+
+    .textarea-wrapper {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .textarea-wrapper:focus-within {
+      border-color: rgba(0,229,160,0.3);
+      box-shadow: 0 0 0 3px rgba(0,229,160,0.06);
+    }
+
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.7;
+      padding: 24px 24px 80px;
+      resize: none;
+      min-height: 160px;
+    }
+
+    textarea::placeholder { color: var(--muted); }
+
+    .textarea-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      background: rgba(10,10,15,0.6);
+      backdrop-filter: blur(8px);
+    }
+
+    .char-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .analyze-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-pos);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.3); }
+    .analyze-btn:active { transform: translateY(0); }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-icon { font-size: 16px; }
+
+    /* Quick examples */
+    .examples {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .examples-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .example-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .example-chip:hover {
+      border-color: rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+
+    /* Results */
+    .results {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .results.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .model-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .model-card.positive { border-color: rgba(0,229,160,0.25); }
+    .model-card.negative { border-color: rgba(255,77,109,0.25); }
+
+    .model-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .model-card.positive::before { background: linear-gradient(90deg, var(--accent-pos), transparent); }
+    .model-card.negative::before { background: linear-gradient(90deg, var(--accent-neg), transparent); }
+
+    .model-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .sentiment-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .positive .sentiment-label { color: var(--accent-pos); }
+    .negative .sentiment-label { color: var(--accent-neg); }
+
+    .confidence-bar-wrap {
+      margin-top: 16px;
+    }
+
+    .confidence-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .confidence-pct {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .bar-bg {
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .positive .bar-fill { background: var(--accent-pos); }
+    .negative .bar-fill { background: var(--accent-neg); }
+
+    .model-accuracy {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* Keywords card */
+    .keywords-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .keywords-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .keyword-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .keyword-tag {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      opacity: 0;
+      transform: scale(0.8);
+      animation: tagIn 0.3s forwards;
+    }
+
+    @keyframes tagIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .word-count {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Agreement indicator */
+    .agreement {
+      margin-top: 16px;
+      padding: 16px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .agreement-icon { font-size: 20px; }
+    .agreement strong { color: var(--text); }
+
+    /* Loading */
+    .loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      gap: 16px;
+    }
+
+    .loading.active { display: flex; }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent-pos);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0 32px;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge"><span></span> CSC 309 — Artificial Intelligence</div>
+      <h1>Sentiment<br><em>Analysis</em> System</h1>
+      <p class="subtitle">Detect whether text is positive or negative using two trained ML models side by side.</p>
+      <div class="model-stats">
+        <div class="stat">
+          <div class="stat-dot dot-nb"></div>
+          Naïve Bayes <strong>{{ nb_accuracy }}%</strong>
+        </div>
+        <div class="stat">
+          <div class="stat-dot dot-lr"></div>
+          Logistic Regression <strong>{{ lr_accuracy }}%</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="input-section">
+      <div class="textarea-wrapper">
+        <textarea id="inputText" placeholder="Type or paste a sentence, review, or tweet here..." maxlength="1000"></textarea>
+        <div class="textarea-footer">
+          <span class="char-count"><span id="charCount">0</span> / 1000</span>
+          <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+            <span class="btn-icon">⚡</span> Analyze
+          </button>
+        </div>
+      </div>
+
+      <div class="examples">
+        <span class="examples-label">try →</span>
+        <span class="example-chip" onclick="setExample(this)">This movie was absolutely amazing!</span>
+        <span class="example-chip" onclick="setExample(this)">Terrible experience, never again.</span>
+        <span class="example-chip" onclick="setExample(this)">The acting was brilliant and the plot kept me hooked.</span>
+        <span class="example-chip" onclick="setExample(this)">Waste of time and money, very disappointing.</span>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span class="loading-text">running models...</span>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-grid">
+        <div class="model-card" id="nbCard">
+          <div class="model-name">Model 01 — Naïve Bayes</div>
+          <div class="sentiment-label" id="nbLabel">—</div>
+          <div class="confidence-bar-wrap">
+            <div class="confidence-label">
+              <span>Confidence</span>
+              <span class="confidence-pct" id="nbConf">—</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="nbBar"></div></div>
+          </div>
+          <div class="model-accuracy" id="nbAcc"></div>
+        </div>
+
+        <div class="model-card" id="lrCard">
+          <div class="model-name">Model 02 — Logistic Regression</div>
+          <div class="sentiment-label" id="lrLabel">—</div>
+          <div class="confidence-bar-wrap">
+            <div class="confidence-label">
+              <span>Confidence</span>
+              <span class="confidence-pct" id="lrConf">—</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="lrBar"></div></div>
+          </div>
+          <div class="model-accuracy" id="lrAcc"></div>
+        </div>
+      </div>
+
+      <div class="keywords-card">
+        <div class="keywords-title">🔍 Key Words Detected</div>
+        <div class="keyword-tags" id="keywords"></div>
+        <div class="word-count" id="wordCount"></div>
+      </div>
+
+      <div class="agreement" id="agreement">
+        <span class="agreement-icon" id="agreementIcon"></span>
+        <span id="agreementText"></span>
+      </div>
+    </div>
+
+    <footer>Hillary Chukwuma Prince · CSC 309 Mini Project · Group 2</footer>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('inputText');
+    const charCount = document.getElementById('charCount');
+
+    textarea.addEventListener('input', () => {
+      charCount.textContent = textarea.value.length;
+    });
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) analyze();
+    });
+
+    function setExample(el) {
+      textarea.value = el.textContent;
+      charCount.textContent = textarea.value.length;
+      textarea.focus();
+    }
+
+    async function analyze() {
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('analyzeBtn');
+      const loading = document.getElementById('loading');
+      const results = document.getElementById('results');
+
+      btn.disabled = true;
+      loading.classList.add('active');
+      results.classList.remove('visible');
+
+      try {
+        const res = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+
+        displayResults(data);
+      } catch (e) {
+        alert('Error analyzing text. Is the server running?');
+      } finally {
+        btn.disabled = false;
+        loading.classList.remove('active');
+      }
+    }
+
+    function displayResults(data) {
+      const nb = data.naive_bayes;
+      const lr = data.logistic_regression;
+
+      // NB card
+      const nbCard = document.getElementById('nbCard');
+      nbCard.className = 'model-card ' + nb.label.toLowerCase();
+      document.getElementById('nbLabel').textContent = nb.label;
+      document.getElementById('nbConf').textContent = nb.confidence + '%';
+      document.getElementById('nbAcc').textContent = `Training accuracy: ${nb.accuracy}%`;
+      setTimeout(() => {
+        document.getElementById('nbBar').style.width = nb.confidence + '%';
+      }, 100);
+
+      // LR card
+      const lrCard = document.getElementById('lrCard');
+      lrCard.className = 'model-card ' + lr.label.toLowerCase();
+      document.getElementById('lrLabel').textContent = lr.label;
+      document.getElementById('lrConf').textContent = lr.confidence + '%';
+      document.getElementById('lrAcc').textContent = `Training accuracy: ${lr.accuracy}%`;
+      setTimeout(() => {
+        document.getElementById('lrBar').style.width = lr.confidence + '%';
+      }, 100);
+
+      // Keywords
+      const kwContainer = document.getElementById('keywords');
+      kwContainer.innerHTML = '';
+      if (data.keywords.length > 0) {
+        data.keywords.forEach((kw, i) => {
+          const tag = document.createElement('span');
+          tag.className = 'keyword-tag';
+          tag.textContent = kw;
+          tag.style.animationDelay = (i * 0.05) + 's';
+          kwContainer.appendChild(tag);
+        });
+      } else {
+        kwContainer.innerHTML = '<span style="color:var(--muted);font-size:13px;">No strong keywords found</span>';
+      }
+
+      document.getElementById('wordCount').textContent =
+        `${data.processed_words} meaningful word${data.processed_words !== 1 ? 's' : ''} analyzed`;
+
+      // Agreement
+      const agree = nb.label === lr.label;
+      document.getElementById('agreementIcon').textContent = agree ? '✅' : '⚠️';
+      document.getElementById('agreementText').innerHTML = agree
+        ? `<strong>Both models agree</strong> — the text is <strong>${nb.label}</strong>.`
+        : `<strong>Models disagree</strong> — Naïve Bayes says <strong>${nb.label}</strong>, Logistic Regression says <strong>${lr.label}</strong>.`;
+
+      document.getElementById('results').classList.add('visible');
+    }
+  </script>
+</body>
+</html>
