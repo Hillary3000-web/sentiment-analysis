@@ -155,6 +155,9 @@ def analyze_sentiment(text):
         "processed_words": len(words)
     }
 
+# Initialize models synchronously so they are available to Gunicorn workers
+load_models()
+
 @app.route('/')
 def index():
     return render_template('index.html', nb_accuracy=nb_accuracy, lr_accuracy=lr_accuracy)
@@ -174,7 +177,6 @@ def analyze():
     return jsonify(result)
 
 if __name__ == '__main__':
-    print("Initializing Application...")
-    load_models()
+    print("Starting server in development mode...")
     print("Starting server...")
     app.run(debug=True, port=5000)
