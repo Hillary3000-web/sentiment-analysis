@@ -32,6 +32,10 @@ vectorizer = None
 nb_accuracy = 0
 lr_accuracy = 0
 
+MODEL_DIR = 'models'
+os.makedirs(MODEL_DIR, exist_ok=True)
+MODEL_PATH = os.path.join(MODEL_DIR, 'sentiment_models.pkl')
+
 def preprocess_text(text):
     """Clean and preprocess text."""
     text = text.lower()
@@ -82,6 +86,39 @@ def train_models():
     print(f"Naive Bayes Accuracy: {nb_accuracy}%")
     print(f"Logistic Regression Accuracy: {lr_accuracy}%")
     print("Models trained successfully!")
+
+    # Save to disk for faster startup next time
+    print("Saving models to disk...")
+    with open(MODEL_PATH, 'wb') as f:
+        pickle.dump({
+            'nb_model': nb_model,
+            'lr_model': lr_model,
+            'vectorizer': vectorizer,
+            'nb_accuracy': nb_accuracy,
+            'lr_accuracy': lr_accuracy
+        }, f)
+
+def load_models():
+    """Load models from disk if available, otherwise train them."""
+    global nb_model, lr_model, vectorizer, nb_accuracy, lr_accuracy
+    
+    if os.path.exists(MODEL_PATH):
+        print("Loading pre-trained models from disk...")
+        try:
+            with open(MODEL_PATH, 'rb') as f:
+                data = pickle.load(f)
+                nb_model = data['nb_model']
+                lr_model = data['lr_model']
+                vectorizer = data['vectorizer']
+                nb_accuracy = data['nb_accuracy']
+                lr_accuracy = data['lr_accuracy']
+            print("Models loaded successfully!")
+        except Exception as e:
+            print(f"Error loading models: {e}. Retraining...")
+            train_models()
+    else:
+        print("No pre-trained models found.")
+        train_models()
 
 def analyze_sentiment(text):
     """Analyze sentiment of given text using both models."""
@@ -137,7 +174,7 @@ def analyze():
     return jsonify(result)
 
 if __name__ == '__main__':
-    print("Training models, please wait...")
-    train_models()
+    print("Initializing Application...")
+    load_models()
     print("Starting server...")
     app.run(debug=True, port=5000)
