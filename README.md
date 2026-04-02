@@ -11,6 +11,7 @@ A web-based Sentiment Analysis System that:
 - Highlights **keywords** detected in the input
 - Displays **training accuracy** of each model
 - Indicates whether both models **agree or disagree**
+- **Caches trained models** to disk (`.pkl`) for lightning-fast server startup
 
 Trained on the **NLTK Movie Reviews Dataset** (2,000 labeled reviews).
 
@@ -42,7 +43,7 @@ python app.py
 http://localhost:5000
 ```
 
-> **Note**: On first run, NLTK will download the movie_reviews corpus (~3MB). Models train in ~30 seconds.
+> **Note**: On the first run, NLTK will download the movie_reviews corpus (~3MB). The models will take ~30 seconds to train, but are then saved locally. **Subsequent startups will load the pre-trained models instantly.**
 
 ---
 
@@ -52,6 +53,7 @@ sentiment_analysis/
 ├── app.py              # Flask backend + ML logic
 ├── requirements.txt    # Python dependencies
 ├── README.md           # This file
+├── models/             # Pickled trained ML models (persistent storage)
 └── templates/
     └── index.html      # Frontend UI
 ```
