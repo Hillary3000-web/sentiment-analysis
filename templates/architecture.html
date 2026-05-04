@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  .arch-container { max-width: 760px; margin: 0 auto; padding-top: 40px; }
+  .arch-section { margin-top: 64px; }
+  .arch-section h2 { font-size: 36px; margin-bottom: 16px; }
+  
+  .concept-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-top: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .concept-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+  }
+  
+  .concept-title { font-family: var(--font-mono); color: var(--accent-pos); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
+  .concept-title.lr { color: var(--accent-neutral); }
+  
+  .formula { font-family: var(--font-mono); background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; margin: 20px 0; font-size: 14px; overflow-x: auto; color: var(--muted); border: 1px solid rgba(255,255,255,0.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="arch-container">
+  <h1>System <em>Architecture</em></h1>
+  <p style="font-size: 22px; color: var(--text); line-height: 1.4;">How SentimentIQ processes human language and assigns emotional polarity using classical Machine Learning.</p>
+  
+  <div class="arch-section">
+    <h2>Data Pipeline</h2>
+    <p>Before any model can understand text, the raw input must be mathematically encoded. SentimentIQ uses an NLP pipeline to process the data:</p>
+    <div class="concept-card">
+      <div class="concept-title" style="color: var(--text);">Text Processing Pipeline</div>
+      <p style="margin-bottom: 12px; color: var(--text);">1. <strong>Tokenization:</strong> Splitting sentences into individual words.</p>
+      <p style="margin-bottom: 12px; color: var(--text);">2. <strong>Stopword Removal:</strong> Filtering out common English words (like "the", "is", "and") that carry no emotional weight.</p>
+      <p style="margin-bottom: 0; color: var(--text);">3. <strong>TF-IDF Vectorization:</strong> Converting words into numerical matrices using <em>Term Frequency-Inverse Document Frequency</em>. This emphasizes words that are highly specific to a sentiment while down-weighting generic terms.</p>
+    </div>
+  </div>
+
+  <div class="arch-section">
+    <h2>The Models</h2>
+    
+    <div class="concept-card">
+      <div class="concept-title">Naïve Bayes Classifier</div>
+      <p>Naïve Bayes is a probabilistic model based on Bayes' Theorem. It calculates the probability of a sentiment label given the specific words in the text.</p>
+      <div class="formula">P(Label | Words) = P(Words | Label) * P(Label) / P(Words)</div>
+      <p style="margin-bottom: 0;">Despite the "naïve" assumption that every word is independent of the others, it performs exceptionally well on text classification tasks and requires very little training data to be highly accurate.</p>
+    </div>
+
+    <div class="concept-card">
+      <div class="concept-title lr">Logistic Regression</div>
+      <p>Instead of calculating probabilities of individual features like Naïve Bayes, Logistic Regression learns the optimal weights for each word to predict the outcome.</p>
+      <div class="formula">f(x) = 1 / (1 + e^-(β0 + β1x1 + ... + βnxn))</div>
+      <p style="margin-bottom: 0;">It passes a linear combination of the TF-IDF vectors through a Sigmoid function, mapping any value to a smooth probability curve between 0 (Negative) and 1 (Positive).</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

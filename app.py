@@ -154,6 +154,14 @@ load_models()
 def index():
     return render_template('index.html', nb_accuracy=nb_accuracy, lr_accuracy=lr_accuracy)
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/architecture')
+def architecture():
+    return render_template('architecture.html')
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.get_json()
