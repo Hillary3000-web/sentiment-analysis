@@ -12,18 +12,10 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 import re
 
+# Configure NLTK to use local directory
+nltk.data.path.append(os.path.abspath('./nltk_data'))
+
 app = Flask(__name__)
-
-# Download required NLTK data
-def download_nltk_data():
-    resources = ['movie_reviews', 'stopwords', 'punkt', 'punkt_tab']
-    for r in resources:
-        try:
-            nltk.download(r, quiet=True)
-        except:
-            pass
-
-download_nltk_data()
 
 # Global model variables
 nb_model = None

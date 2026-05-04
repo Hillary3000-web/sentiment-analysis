@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SentimentIQ — CSC 309 Mini Project</title>
+  <title>SentimentIQ — Premium Analysis</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,6 +39,19 @@
         radial-gradient(ellipse 40% 30% at 60% 40%, rgba(255,77,109,0.04) 0%, transparent 50%);
       pointer-events: none;
       z-index: 0;
+    }
+
+    /* Dynamic Mouse Glow */
+    .mouse-glow {
+      position: fixed;
+      top: 0; left: 0;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0, 229, 160, 0.04) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      transition: opacity 0.3s;
     }
 
     .container {
@@ -112,6 +125,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 12px 20px;
+      backdrop-filter: blur(10px);
     }
 
     .stat {
@@ -184,6 +198,30 @@
       color: var(--muted);
     }
 
+    .action-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .clear-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: rgba(255,77,109,0.1);
+      color: var(--accent-neg);
+      border-color: rgba(255,77,109,0.3);
+    }
+
     .analyze-btn {
       display: flex;
       align-items: center;
@@ -204,8 +242,6 @@
     .analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.3); }
     .analyze-btn:active { transform: translateY(0); }
     .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-    .btn-icon { font-size: 16px; }
 
     /* Quick examples */
     .examples {
@@ -236,8 +272,8 @@
     }
 
     .example-chip:hover {
-      border-color: rgba(255,255,255,0.15);
-      color: var(--text);
+      border-color: rgba(0,229,160,0.4);
+      color: var(--accent-pos);
     }
 
     /* Results */
@@ -245,13 +281,13 @@
       opacity: 0;
       transform: translateY(16px);
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      pointer-events: none;
+      display: none;
     }
 
     .results.visible {
       opacity: 1;
       transform: translateY(0);
-      pointer-events: all;
+      display: block;
     }
 
     .results-grid {
@@ -298,6 +334,7 @@
       font-size: 32px;
       font-weight: 800;
       margin-bottom: 4px;
+      min-height: 38px;
     }
 
     .positive .sentiment-label { color: var(--accent-pos); }
@@ -343,6 +380,7 @@
       font-size: 11px;
       color: var(--muted);
       font-family: 'DM Mono', monospace;
+      min-height: 16px;
     }
 
     /* Keywords card */
@@ -366,6 +404,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      min-height: 30px;
     }
 
     .keyword-tag {
@@ -389,6 +428,7 @@
       margin-top: 12px;
       font-size: 12px;
       color: var(--muted);
+      min-height: 16px;
     }
 
     /* Agreement indicator */
@@ -403,37 +443,48 @@
       gap: 12px;
       font-size: 14px;
       color: var(--muted);
+      min-height: 54px;
     }
 
     .agreement-icon { font-size: 20px; }
     .agreement strong { color: var(--text); }
 
-    /* Loading */
-    .loading {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px;
-      gap: 16px;
+    /* Skeleton Loading State */
+    .results.skeleton {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: none;
+      display: block;
     }
 
-    .loading.active { display: flex; }
-
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent-pos);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+    .results.skeleton .sentiment-label,
+    .results.skeleton .confidence-pct,
+    .results.skeleton .model-accuracy,
+    .results.skeleton .keyword-tag,
+    .results.skeleton .word-count,
+    .results.skeleton .agreement-text {
+      color: transparent !important;
+      background: rgba(255,255,255,0.05) !important;
+      border-radius: 6px;
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+      display: inline-block;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .results.skeleton .sentiment-label { width: 140px; margin-bottom: 4px; }
+    .results.skeleton .confidence-pct { width: 40px; }
+    .results.skeleton .model-accuracy { width: 180px; }
+    .results.skeleton .word-count { width: 150px; }
+    .results.skeleton .agreement-text { width: 300px; height: 20px; }
+    .results.skeleton .keyword-tag { width: 80px; height: 30px; }
 
-    .loading-text {
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      color: var(--muted);
+    .results.skeleton .bar-fill { width: 0 !important; }
+    .results.skeleton .model-card::before { background: transparent !important; }
+    .results.skeleton .model-card { border-color: var(--border) !important; }
+    .results.skeleton .agreement-icon { opacity: 0; }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
 
     /* Footer */
@@ -452,6 +503,8 @@
   </style>
 </head>
 <body>
+  <div class="mouse-glow" id="mouseGlow"></div>
+
   <div class="container">
     <header>
       <div class="badge"><span></span> CSC 309 — Artificial Intelligence</div>
@@ -474,9 +527,14 @@
         <textarea id="inputText" placeholder="Type or paste a sentence, review, or tweet here..." maxlength="1000"></textarea>
         <div class="textarea-footer">
           <span class="char-count"><span id="charCount">0</span> / 1000</span>
-          <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
-            <span class="btn-icon">⚡</span> Analyze
-          </button>
+          <div class="action-group">
+            <button class="clear-btn" id="clearBtn" onclick="clearText()" title="Clear Text">
+              🗑️
+            </button>
+            <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+              <span class="btn-icon">⚡</span> Analyze
+            </button>
+          </div>
         </div>
       </div>
 
@@ -489,20 +547,16 @@
       </div>
     </div>
 
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <span class="loading-text">running models...</span>
-    </div>
-
+    <!-- Results Area with Skeleton Support -->
     <div class="results" id="results">
       <div class="results-grid">
         <div class="model-card" id="nbCard">
           <div class="model-name">Model 01 — Naïve Bayes</div>
-          <div class="sentiment-label" id="nbLabel">—</div>
+          <div class="sentiment-label" id="nbLabel"></div>
           <div class="confidence-bar-wrap">
             <div class="confidence-label">
               <span>Confidence</span>
-              <span class="confidence-pct" id="nbConf">—</span>
+              <span class="confidence-pct" id="nbConf"></span>
             </div>
             <div class="bar-bg"><div class="bar-fill" id="nbBar"></div></div>
           </div>
@@ -511,11 +565,11 @@
 
         <div class="model-card" id="lrCard">
           <div class="model-name">Model 02 — Logistic Regression</div>
-          <div class="sentiment-label" id="lrLabel">—</div>
+          <div class="sentiment-label" id="lrLabel"></div>
           <div class="confidence-bar-wrap">
             <div class="confidence-label">
               <span>Confidence</span>
-              <span class="confidence-pct" id="lrConf">—</span>
+              <span class="confidence-pct" id="lrConf"></span>
             </div>
             <div class="bar-bg"><div class="bar-fill" id="lrBar"></div></div>
           </div>
@@ -531,7 +585,7 @@
 
       <div class="agreement" id="agreement">
         <span class="agreement-icon" id="agreementIcon"></span>
-        <span id="agreementText"></span>
+        <span class="agreement-text" id="agreementText"></span>
       </div>
     </div>
 
@@ -539,6 +593,13 @@
   </div>
 
   <script>
+    // Mouse Glow Effect
+    const glow = document.getElementById('mouseGlow');
+    window.addEventListener('mousemove', (e) => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    });
+
     const textarea = document.getElementById('inputText');
     const charCount = document.getElementById('charCount');
 
@@ -556,17 +617,44 @@
       textarea.focus();
     }
 
+    function clearText() {
+      textarea.value = '';
+      charCount.textContent = '0';
+      textarea.focus();
+      document.getElementById('results').classList.remove('visible');
+    }
+
+    function setSkeletonState() {
+      const results = document.getElementById('results');
+      results.className = 'results visible skeleton'; // Turn on skeleton
+      
+      // Reset texts to allow skeleton boxes to size properly
+      document.getElementById('nbCard').className = 'model-card';
+      document.getElementById('lrCard').className = 'model-card';
+      
+      document.getElementById('nbLabel').innerHTML = '&nbsp;';
+      document.getElementById('lrLabel').innerHTML = '&nbsp;';
+      document.getElementById('nbConf').innerHTML = '&nbsp;';
+      document.getElementById('lrConf').innerHTML = '&nbsp;';
+      document.getElementById('nbAcc').innerHTML = '&nbsp;';
+      document.getElementById('lrAcc').innerHTML = '&nbsp;';
+      document.getElementById('wordCount').innerHTML = '&nbsp;';
+      document.getElementById('agreementText').innerHTML = '&nbsp;';
+      document.getElementById('agreementIcon').innerHTML = '';
+      
+      const kw = document.getElementById('keywords');
+      kw.innerHTML = '<span class="keyword-tag">&nbsp;</span><span class="keyword-tag">&nbsp;</span><span class="keyword-tag">&nbsp;</span>';
+    }
+
     async function analyze() {
       const text = textarea.value.trim();
       if (!text) return;
 
       const btn = document.getElementById('analyzeBtn');
-      const loading = document.getElementById('loading');
       const results = document.getElementById('results');
 
       btn.disabled = true;
-      loading.classList.add('active');
-      results.classList.remove('visible');
+      setSkeletonState();
 
       try {
         const res = await fetch('/analyze', {
@@ -576,18 +664,25 @@
         });
 
         const data = await res.json();
-        if (data.error) { alert(data.error); return; }
+        if (data.error) { 
+          alert(data.error); 
+          results.classList.remove('visible', 'skeleton');
+          return; 
+        }
 
         displayResults(data);
       } catch (e) {
         alert('Error analyzing text. Is the server running?');
+        results.classList.remove('visible', 'skeleton');
       } finally {
         btn.disabled = false;
-        loading.classList.remove('active');
       }
     }
 
     function displayResults(data) {
+      const results = document.getElementById('results');
+      results.className = 'results visible'; // Remove skeleton
+      
       const nb = data.naive_bayes;
       const lr = data.logistic_regression;
 
@@ -635,8 +730,6 @@
       document.getElementById('agreementText').innerHTML = agree
         ? `<strong>Both models agree</strong> — the text is <strong>${nb.label}</strong>.`
         : `<strong>Models disagree</strong> — Naïve Bayes says <strong>${nb.label}</strong>, Logistic Regression says <strong>${lr.label}</strong>.`;
-
-      document.getElementById('results').classList.add('visible');
     }
   </script>
 </body>
